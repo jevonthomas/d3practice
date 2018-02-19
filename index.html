@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>D3 Demonstration</title>
+  </head>
+  <body>
+    <h1>Male vs Female Population in Tennessee 2016</h1>
+    <div class='radio'>
+      <label class='radio-inline'>
+        <input type="radio" name="gender" value="male"> male
+      </label>
+      <label class='radio-inline'>
+        <input type="radio" name="gender" value="female"> female
+      </label>
+      <label class='radio-inline'>
+        <input type="radio" name="gender" value="both" checked > total
+      </label>
+    </div>
+    
+    <div id="chart">
+    </div>
+    
+  </body>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script>
+
+    //Set dimensions and margins of the graph
+    let margin = {top: 20, right: 20, bottom: 50, left: 70};
+    let width = 960 - margin.left - margin.right;
+    let height = 500 - margin.top - margin.bottom;
+
+    //Scale the ranges
+    let yScale = d3.scaleLinear()
+      .range([height, 0]);
+    let xScale = d3.scaleBand()
+      .range([0, width])
+      .padding(0.1);
+
+    // append the svg object to the body of the page
+    // append a 'group' element to 'svg'
+    // moves the 'group' element to the top left margin
+    let svg = d3.select("#chart").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", 
+        "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.select('.radio').on('change', function() {
+      if(event.target.value === "male") {
+        let value = event.target.value;
+        getData(`data/${value}_population_tennessee.csv`)
+      } else if (event.target.value === "female") {
+        let value = event.target.value;
+        getData(`data/${value}_population_tennessee.csv`)
+      } else {
+        getData(`data/population_tennessee.csv`)
+      }
+    })
+    
+    getData(`data/population_tennessee.csv`)
+    
+    function getData(dataSheet) {
+      //get the data
+      d3.csv(dataSheet, function(error, censusData) {
+        if (error) throw error;
+        
+        // format the data
+        censusData.forEach(function(d) {
+          d.total = +d.total;
+        });
+
+        makeBar(censusData, dataSheet);
+
+    })
+
+    function makeBar(censusData, dataSheet) {
+      // Scale the range of the data in the domains
+      xScale.domain(censusData.map(function(d) { return d.age; }));
+      yScale.domain([0, 1761142]);
+
+      svg.selectAll('rect')
+        .remove()
+        .exit()
+
+      // append the rectangles for the bar chart
+      let chart = svg.selectAll(".bar")
+        .data(censusData)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", function(d) { return xScale(d.age); })
+        .attr("width", xScale.bandwidth())
+        .attr("y", height)
+        .attr("height", 0)
+        .style("fill", function(){
+            if(dataSheet === 'data/male_population_tennessee.csv'){
+              return 'steelblue';
+            } else if(dataSheet === 'data/female_population_tennessee.csv') {
+              return 'pink';
+            } else {
+              return 'lightgreen';
+            }
+          })
+
+      chart.transition()
+          .attr("height", function(d) { return height - yScale(d.total); })
+          .attr('y', function(d) { return yScale(d.total); })
+          .ease(d3.easeElastic).duration(700)
+          
+
+      svg.selectAll('g')
+        .remove()
+        .exit()
+
+
+      // add the x Axis
+      svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(xScale));
+
+      // add the y Axis
+      svg.append("g")
+        .call(d3.axisLeft(yScale));
+
+
+    }
+    }
+
+
+  </script>
+</html>
